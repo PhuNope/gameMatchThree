@@ -1,7 +1,6 @@
-import { _decorator, Component, instantiate, Node, Prefab, randomRangeInt } from 'cc';
+import { _decorator, Component, instantiate, Node, Prefab, randomRangeInt, tween } from 'cc';
 import { bubbleController } from './items/bubbleController';
 import { GameState } from './utils/GameDefines';
-import { TweenUtil } from './utils/TweenUtil';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameController')
@@ -98,10 +97,50 @@ export class GameController extends Component {
     // start animated swap of two bubbles
     public makeSwap(bubble1: Node, bubble2: Node) {
         this._gameState = GameState.SWAPPING;
-        TweenUtil.swapBubble(this._gridData, bubble1, bubble2);
+        this.swapBubble(bubble1, bubble2);
 
         // check to see if move was fruitful        
     }
+
+    public swapBubble(bubble1: Node, bubble2: Node) {
+        let bubble1Controller = bubble1.getComponent(bubbleController);
+        let bubble2Controller = bubble2.getComponent(bubbleController);
+        //swap positions
+        let tempPosition = bubble1.position;
+        tween(bubble1).to(0.75, { position: bubble2.position }, { easing: "quadInOut" }).start();
+        tween(bubble2).to(0.75, { position: tempPosition }, { easing: "quadInOut" }).start();
+
+        //swap row and col
+        let tempCol = bubble1Controller.col;
+        let tempRow = bubble1Controller.row;
+
+        [this._gridData[bubble1Controller.col][bubble1Controller.row], this._gridData[bubble2Controller.col][bubble2Controller.row]] = [this._gridData[bubble2Controller.col][bubble2Controller.row], this._gridData[bubble1Controller.col][bubble1Controller.row]];
+
+        bubble1Controller.setColAndRow(bubble2Controller.col, bubble2Controller.row);
+        bubble2Controller.setColAndRow(tempCol, tempRow);
+
+        console.log(this._gridData);
+
+    }
+
+    // public moveBubble() {
+    //     let madeMove: boolean = false;
+
+    //     for (let row = 0; row < 5; row++) {
+    //         for (let col = 0; col < 5; col++) {
+    //             if (this._gridData[col][row]) {
+    //                 let dataController: bubbleController = this._gridData[col][row].getComponent(bubbleController);
+    //                 //needs to move down
+    //                 if (dataController.col) {
+
+    //                 }
+    //             }
+    //         }
+
+    //     }
+    // }
+
+    
 }
 
 

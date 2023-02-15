@@ -61,6 +61,14 @@ export class bubbleController extends Component {
     clickPiece() {
         this._clickPiece(this.node);
     }
+
+    public offEventClick() {
+        this.node.off(Input.EventType.TOUCH_START, this.clickPiece, this);
+    }
+
+    public onEventClick() {
+        this.node.on(Input.EventType.TOUCH_START, this.clickPiece, this);
+    }
 }
 
 
