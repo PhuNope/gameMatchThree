@@ -1,5 +1,5 @@
 import { Node, Vec3, tween } from "cc";
-import { bubbleController } from "../items/bubbleController";
+import { bubbleController } from "../objects/bubbleController";
 
 export class GridDataUtil {
     public clearEvents(gridData: any[]) {

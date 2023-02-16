@@ -1,5 +1,5 @@
 import { _decorator, Component, Sprite, SpriteFrame, Node, Input, randomRangeInt } from 'cc';
-import { GameController } from '../GameController';
+
 const { ccclass, property } = _decorator;
 
 @ccclass('bubbleController')
