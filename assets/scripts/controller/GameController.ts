@@ -28,6 +28,10 @@ export class GameController extends Component {
 
     start() {
         this.setUpGrid();
+
+        setTimeout(() => {
+            this.findAndRemoveMatches();
+        }, 500);
     }
 
     //set up grid and startgame
@@ -272,6 +276,8 @@ export class GameController extends Component {
 
     // gets matches and removes them, applies points
     public findAndRemoveMatches() {
+        if (!this.availableMoves()) console.log("end game");
+
         //get list of matches
         let matches = this.lookForMatches();
 
@@ -343,6 +349,122 @@ export class GameController extends Component {
             }
         }
 
-        this.findAndRemoveMatches();
+        setTimeout(() => {
+            this.findAndRemoveMatches();
+        }, 500);
+    }
+
+    public availableMoves(): boolean {
+        for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 5; row++) {
+                let bubbleUuid: string = this._gridData[col][row];
+
+                if (this.hozirontalTwoPlusOne(bubbleUuid) || this.horizntalMiddle(bubbleUuid) || this.verticalTwoPlusOne(bubbleUuid) || this.verticalMiddle(bubbleUuid)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    public hozirontalTwoPlusOne(bubbleUuid: string): boolean {
+        let script1 = this.getScriptByNodeUuid(bubbleUuid);
+
+        if (!this._gridData[script1.col + 1][script1.row]) return false;
+
+        let script2 = this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row]);
+
+        if (script1.type != script2.type) return false;
+
+        let script3 = this._gridData[script1.col - 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
+
+        let script4 = this._gridData[script1.col - 2][script1.row] ? this.getScriptByNodeUuid(this._gridData[script1.col - 2][script1.row]) : null;
+
+        let script5 = this._gridData[script1.col - 1][script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row - 1]) : null;
+
+        let script6 = this._gridData[script1.col + 2][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row + 1]) : null;
+
+        let script7 = this._gridData[script1.col + 3][script1.row] ? this.getScriptByNodeUuid(this._gridData[script1.col + 3][script1.row]) : null;
+
+        let script8 = this._gridData[script1.col + 2][script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row - 1]) : null;
+
+        if (!script3 && !script4 && !script5 && !script6 && !script7 && !script8) return false;
+
+        if (script3?.type == script1.type) return true;
+        if (script4?.type == script1.type) return true;
+        if (script5?.type == script1.type) return true;
+        if (script6?.type == script1.type) return true;
+        if (script7?.type == script1.type) return true;
+        if (script8?.type == script1.type) return true;
+    }
+
+    public horizntalMiddle(bubbleUuid: string): boolean {
+        let script1 = this.getScriptByNodeUuid(bubbleUuid);
+
+        if (!this._gridData[script1.col + 2][script1.row]) return false;
+
+        let script2 = this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row]);
+        if (script1.type != script2.type) return false;
+
+        let script3 = this._gridData[script1.col + 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
+
+        let script4 = this._gridData[script1.col + 2][script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row - 1]) : null;
+
+        if (!script3 && !script4) return false;
+
+        if (script3?.type == script1.type) return true;
+        if (script4?.type == script1.type) return true;
+    }
+
+    public verticalTwoPlusOne(bubbleUuid: string): boolean {
+        let script1 = this.getScriptByNodeUuid(bubbleUuid);
+
+        if (!this._gridData[script1.col][script1.row - 1]) return false;
+
+        let script2 = this.getScriptByNodeUuid(this._gridData[script1.col][script1.row - 1]);
+
+        if (script1.type != script2.type) return false;
+
+        let script3 = this._gridData[script1.col - 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
+
+        let script4 = this._gridData[script1.col][script1.row + 2] ? this.getScriptByNodeUuid(this._gridData[script1.col][script1.row + 2]) : null;
+
+        let script5 = this._gridData[script1.col + 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
+
+        let script6 = this._gridData[script1.col - 1][script1.row - 2] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row - 2]) : null;
+
+        let script7 = this._gridData[script1.col][script1.row - 3] ? this.getScriptByNodeUuid(this._gridData[script1.col][script1.row - 3]) : null;
+
+        let script8 = this._gridData[script1.col + 1][script1.row - 2] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row - 2]) : null;
+
+        if (!script3 && !script4 && !script5 && !script6 && !script7 && !script8) return false;
+
+        if (script3?.type == script1.type) return true;
+        if (script4?.type == script1.type) return true;
+        if (script5?.type == script1.type) return true;
+        if (script6?.type == script1.type) return true;
+        if (script7?.type == script1.type) return true;
+        if (script8?.type == script1.type) return true;
+    }
+
+    public verticalMiddle(bubbleUuid: string): boolean {
+        let script1 = this.getScriptByNodeUuid(bubbleUuid);
+
+        if (!this._gridData[script1.col][script1.row + 2]) return false;
+
+        let script2 = this.getScriptByNodeUuid(this._gridData[script1.col][script1.row + 2]);
+        if (script1.type != script2.type) return false;
+
+        let script3 = this._gridData[script1.col - 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
+
+        let script4 = this._gridData[script1.col + 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
+
+        if (!script3 && !script4) return false;
+
+        if (script3?.type == script1.type) return true;
+        if (script4?.type == script1.type) return true;
+    }
+
+    public getScriptByNodeUuid(uuid: string): bubbleController {
+        return this.gridViewNode.getChildByUuid(uuid).getComponent(bubbleController);
     }
 }
