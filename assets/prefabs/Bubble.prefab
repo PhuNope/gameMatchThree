@@ -385,6 +385,22 @@
       {
         "__uuid__": "c6f4b48d-e505-463a-ac26-92c0ee5ef902@f9941",
         "__expectedType__": "cc.SpriteFrame"
+      },
+      {
+        "__uuid__": "cb528335-e8e6-4ae5-a274-c91c706fa37e@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      },
+      {
+        "__uuid__": "de22cf0a-0e6c-43bd-833a-6391c70310b3@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      },
+      {
+        "__uuid__": "12f4c905-2fe3-4f95-bad2-ad0589943ae7@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      },
+      {
+        "__uuid__": "c1d4fcaa-b18f-46cb-87b2-b718e6352a62@f9941",
+        "__expectedType__": "cc.SpriteFrame"
       }
     ],
     "background": {

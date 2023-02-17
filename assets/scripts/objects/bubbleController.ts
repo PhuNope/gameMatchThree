@@ -17,6 +17,7 @@ export class bubbleController extends Component {
     public col: number;
     public row: number;
     public type: number;
+    public shift: number = 0;
 
     //callback
     private _clickPiece: CallableFunction;

@@ -99,13 +99,15 @@ export class GameController extends Component {
 
     // start animated swap of two bubbles
     public makeSwap(bubble1: Node, bubble2: Node) {
-        this._gameState = GameState.SWAPPING;
+        //this._gameState = GameState.SWAPPING;
+
         this.swapBubble(bubble1, bubble2);
 
-        // check to see if move was fruitful    
-        if (this.lookForMatches().length == 0) {
-            this.swapBubble(bubble1, bubble2);
-        }
+        // check to see if move was fruitful  
+        // if (this.lookForMatches().length == 0) {
+        //     this.swapBubble(bubble1, bubble2);
+        // }
+
     }
 
     public swapBubble(bubble1: Node, bubble2: Node) {
@@ -113,25 +115,64 @@ export class GameController extends Component {
         let bubble2Controller = bubble2.getComponent(bubbleController);
 
         //swap row and col
-        let tempCol = bubble1Controller.col;
-        let tempRow = bubble1Controller.row;
+        let temp1Col = bubble1Controller.col;
+        let temp1Row = bubble1Controller.row;
+        let temp2Col = bubble2Controller.col;
+        let temp2Row = bubble2Controller.row;
 
-        this._gridData[bubble1Controller.col][bubble1Controller.row] = bubble2.uuid;
-        this._gridData[bubble2Controller.col][bubble2Controller.row] = bubble1.uuid;
-
-        bubble1Controller.setColAndRow(bubble2Controller.col, bubble2Controller.row);
-        bubble2Controller.setColAndRow(tempCol, tempRow);
-
-        //swap positions
-        let tempPosition = bubble1.position;
         tween(bubble1)
-            .to(0.75, { position: bubble2.position }, { easing: "quadInOut" })
-            .call(() => this.findAndRemoveMatches())
-            .delay(0.2)
-            .call(() => this.affectAbove())
+            .parallel(
+                tween(bubble1)
+                    .to(0.75, { position: new Vec3(temp2Col * GameDefines.spacing + GameDefines.offsetX, temp2Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" })
+                    .call(() => {
+                        this._gridData[bubble1Controller.col][bubble1Controller.row] = bubble2.uuid;
+                        this._gridData[bubble2Controller.col][bubble2Controller.row] = bubble1.uuid;
+
+                        bubble1Controller.setColAndRow(temp2Col, temp2Row);
+                        bubble2Controller.setColAndRow(temp1Col, temp1Row);
+                    })
+
+                    .delay(0.2)
+
+                    .call(() => {
+                        if (this.lookForMatches().length == 0) {
+                            this._gridData[bubble1Controller.col][bubble1Controller.row] = bubble2.uuid;
+                            this._gridData[bubble2Controller.col][bubble2Controller.row] = bubble1.uuid;
+
+                            bubble1Controller.setColAndRow(temp1Col, temp1Row);
+                            bubble2Controller.setColAndRow(temp2Col, temp2Row);
+
+                            tween(bubble1)
+                                .parallel(
+                                    tween(bubble1)
+                                        .to(0.75, { position: new Vec3(temp1Col * GameDefines.spacing + GameDefines.offsetX, temp1Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" }),
+
+                                    tween(bubble1)
+                                        .call(() => {
+                                            tween(bubble2).to(0.75, { position: new Vec3(temp2Col * GameDefines.spacing + GameDefines.offsetX, temp2Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" }).start();
+                                        })
+                                )
+                                .start();
+                        } else {
+                            tween(bubble1)
+                                .call(() => {
+                                    this.findAndRemoveMatches();
+                                })
+                                .delay(0.2)
+
+                                .call(() => { this.affectAbove(); }).start();
+
+                        }
+                    }),
+                tween(bubble1)
+                    .call(() => {
+                        tween(bubble2).to(0.75, { position: new Vec3(temp1Col * GameDefines.spacing + GameDefines.offsetX, temp1Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" }).start();
+                    })
+            )
+
             .start();
 
-        tween(bubble2).to(0.75, { position: tempPosition }, { easing: "quadInOut" }).start();
+
     }
 
     // public moveBubble() {
@@ -227,7 +268,7 @@ export class GameController extends Component {
 
         for (let i = 0; i < matches.length; i++) {
             //calculate point
-            let numPoints: number = ((matches[i] as string[]).length - 1) * 50;
+            // let numPoints: number = ((matches[i] as string[]).length - 1) * 50;
 
             for (let j = 0; j < (matches[i] as string[]).length; j++) {
                 if (this.gridViewNode.getChildByUuid(matches[i][j])) {
@@ -236,6 +277,10 @@ export class GameController extends Component {
 
                     this.gridViewNode.getChildByUuid(matches[i][j]).destroy();
                     this._gridData[col][row] = null;
+
+                    (this._gridData[col] as string[])
+                        .push(this.addBubble(col, (this._gridData[col] as string[]).length).uuid);
+
                 }
             }
         }
@@ -243,37 +288,53 @@ export class GameController extends Component {
 
     //tell all bubbles above this one to move down
     public affectAbove() {
+
+        // Calculate how much a tile should be shifted downward
         for (let col = 0; col < 5; col++) {
-            for (let row = 0; row < 4; row++) {
-                if (this._gridData[col][row] == null) {
+            let shift = 0;
 
-                    if (this._gridData[col][row + 1] == null) continue;
+            //console.log((this._gridData[col] as string[]).length);
 
-                    tween(this.gridViewNode.getChildByUuid(this._gridData[col][row + 1]))
+            for (let i = 0; i < (this._gridData[col] as string[]).length; i++) {
+                if (this._gridData[col][i] == null) {
+                    //bubble is removed, increase shitft
+                    shift++;
+                } else {
+                    this.gridViewNode.getChildByUuid(this._gridData[col][i]).getComponent(bubbleController).shift = shift;
+                }
+            }
+        }
 
-                        .to(0.25, { position: new Vec3(col * GameDefines.spacing + GameDefines.offsetX, row * GameDefines.spacing + GameDefines.offsetY) }, { easing: 'bounceInOut' })
+        //shift bubble
+        for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < (this._gridData[col] as string[]).length; row++) {
+                if (this._gridData[col][row] != null) {
+                    if (this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).shift == 0) continue;
+
+                    let shift = this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).shift;
+
+                    tween(this.gridViewNode.getChildByUuid(this._gridData[col][row]))
+
+                        .delay(0.1)
+
+                        .to(0.25, { position: new Vec3(col * GameDefines.spacing + GameDefines.offsetX, (row - shift) * GameDefines.spacing + GameDefines.offsetY) }, { easing: 'bounceInOut' })
 
                         .call(() => {
-                            this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).row--;
-                            this._gridData[col][row] = this._gridData[col][row + 1];
-                            this._gridData[col][row + 1] = null;
-
-                            row = -1;
+                            this._gridData[col][row - shift] = this._gridData[col][row];
+                            this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).shift = 0;
+                            this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).row -= shift;
+                            this._gridData[col][row] = null;
                         })
 
                         .delay(0.1)
 
                         .call(() => {
-                            this.findAndRemoveMatches();
+                            //this.findAndRemoveMatches();
                         })
 
                         .start();
                 }
             }
         }
-    }
-
-    public addNewBubble(col: number) {
-        
     }
 }
