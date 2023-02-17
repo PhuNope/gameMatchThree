@@ -154,13 +154,12 @@ export class GameController extends Component {
                                 )
                                 .start();
                         } else {
-                            tween(bubble1)
-                                .call(() => {
-                                    this.findAndRemoveMatches();
-                                })
-                                .delay(0.2)
-
-                                .call(() => { this.affectAbove(); }).start();
+                            // tween(bubble1)
+                            //     .call(() => {
+                            this.findAndRemoveMatches();
+                            //this.affectAbove();
+                            // })
+                            // .start();
 
                         }
                     }),
@@ -193,7 +192,7 @@ export class GameController extends Component {
     // }
 
     //return an array of all matches found
-    public lookForMatches(): any[] {
+    public lookForMatches(): string[] {
         var matchList = [];
 
         //search for horizontal matches
@@ -202,7 +201,12 @@ export class GameController extends Component {
                 let match = this.getMatchHoriz(col, row);
 
                 if (match.length > 2) {
-                    matchList.push(match);
+
+                    for (let i = 0; i < match.length; i++) {
+                        if (matchList.indexOf(match[i]) == -1) {
+                            matchList.push(match[i]);
+                        }
+                    }
 
                     col += match.length - 1;
                 }
@@ -215,7 +219,12 @@ export class GameController extends Component {
                 let match = this.getMatchVert(col, row);
 
                 if (match.length > 2) {
-                    matchList.push(match);
+
+                    for (let i = 0; i < match.length; i++) {
+                        if (matchList.indexOf(match[i]) == -1) {
+                            matchList.push(match[i]);
+                        }
+                    }
 
                     row += match.length - 1;
                 }
@@ -270,19 +279,21 @@ export class GameController extends Component {
             //calculate point
             // let numPoints: number = ((matches[i] as string[]).length - 1) * 50;
 
-            for (let j = 0; j < (matches[i] as string[]).length; j++) {
-                if (this.gridViewNode.getChildByUuid(matches[i][j])) {
-                    let col = this.gridViewNode.getChildByUuid(matches[i][j]).getComponent(bubbleController).col;
-                    let row = this.gridViewNode.getChildByUuid(matches[i][j]).getComponent(bubbleController).row;
+            if (this.gridViewNode.getChildByUuid(matches[i])) {
+                let col = this.gridViewNode.getChildByUuid(matches[i]).getComponent(bubbleController).col;
+                let row = this.gridViewNode.getChildByUuid(matches[i]).getComponent(bubbleController).row;
 
-                    this.gridViewNode.getChildByUuid(matches[i][j]).destroy();
-                    this._gridData[col][row] = null;
+                this.gridViewNode.getChildByUuid(matches[i]).destroy();
+                this._gridData[col][row] = null;
 
-                    (this._gridData[col] as string[])
-                        .push(this.addBubble(col, (this._gridData[col] as string[]).length).uuid);
+                (this._gridData[col] as string[])
+                    .push(this.addBubble(col, (this._gridData[col] as string[]).length).uuid);
 
-                }
             }
+        }
+
+        if (matches.length > 0) {
+            this.affectAbove();
         }
     }
 
@@ -326,15 +337,12 @@ export class GameController extends Component {
                             this._gridData[col][row] = null;
                         })
 
-                        .delay(0.1)
-
-                        .call(() => {
-                            //this.findAndRemoveMatches();
-                        })
-
                         .start();
+
                 }
             }
         }
+
+        this.findAndRemoveMatches();
     }
 }

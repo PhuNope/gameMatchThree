@@ -37,7 +37,7 @@ export class bubbleController extends Component {
     }
 
     public setType() {
-        this.type = randomRangeInt(0, this.bubblesSF.length);
+        this.type = randomRangeInt(0, 4);
 
         this.displaySpriteFrame.spriteFrame = this.bubblesSF[this.type];
     }
