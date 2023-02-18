@@ -9,6 +9,13 @@ export class GameModel extends Component {
     @property(Node)
     gridViewNode: Node | null = null;
 
+    @property(Node)
+    endGameUI: Node | null = null;
+
+    onLoad() {
+        this.endGameUI.active = false;
+    }
+
     start() {
 
     }

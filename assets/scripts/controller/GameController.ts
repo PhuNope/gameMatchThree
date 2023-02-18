@@ -19,11 +19,15 @@ export class GameController extends Component {
 
     gridViewNode: Node | null = null;
 
+    endGameUI: Node | null = null;
+
     onLoad() {
         this.startMatchThree();
 
         this.bubblePre = this.gameModel.bubblePre;
         this.gridViewNode = this.gameModel.gridViewNode;
+
+        this.endGameUI = this.gameModel.endGameUI;
     }
 
     start() {
@@ -50,6 +54,8 @@ export class GameController extends Component {
 
             this._gridData.push(colData);
         }
+
+        this.onEventClick();
     }
 
     public addBubble(col: number, row: number) {
@@ -85,12 +91,12 @@ export class GameController extends Component {
 
             //same row, one column over
             if (bubbleFirstController.row == bubbleTargetController.row && Math.abs(bubbleFirstController.col - bubbleTargetController.col) == 1) {
-                this.makeSwap(this._firstBubble, bubbleNodeTarget);
+                this.swapBubble(this._firstBubble, bubbleNodeTarget);
                 this._firstBubble = null;
             }
             //same column, one row over
             else if (bubbleFirstController.col == bubbleTargetController.col && Math.abs(bubbleFirstController.row - bubbleTargetController.row) == 1) {
-                this.makeSwap(this._firstBubble, bubbleNodeTarget);
+                this.swapBubble(this._firstBubble, bubbleNodeTarget);
                 this._firstBubble = null;
             }
             //bad move, reassign first bubble
@@ -102,18 +108,6 @@ export class GameController extends Component {
     }
 
     // start animated swap of two bubbles
-    public makeSwap(bubble1: Node, bubble2: Node) {
-        //this._gameState = GameState.SWAPPING;
-
-        this.swapBubble(bubble1, bubble2);
-
-        // check to see if move was fruitful  
-        // if (this.lookForMatches().length == 0) {
-        //     this.swapBubble(bubble1, bubble2);
-        // }
-
-    }
-
     public swapBubble(bubble1: Node, bubble2: Node) {
         let bubble1Controller = bubble1.getComponent(bubbleController);
         let bubble2Controller = bubble2.getComponent(bubbleController);
@@ -123,6 +117,8 @@ export class GameController extends Component {
         let temp1Row = bubble1Controller.row;
         let temp2Col = bubble2Controller.col;
         let temp2Row = bubble2Controller.row;
+
+        this.offEventClick();
 
         tween(bubble1)
             .parallel(
@@ -139,6 +135,7 @@ export class GameController extends Component {
                     .delay(0.2)
 
                     .call(() => {
+                        //no matches found and swap back
                         if (this.lookForMatches().length == 0) {
                             this._gridData[bubble1Controller.col][bubble1Controller.row] = bubble2.uuid;
                             this._gridData[bubble2Controller.col][bubble2Controller.row] = bubble1.uuid;
@@ -149,27 +146,29 @@ export class GameController extends Component {
                             tween(bubble1)
                                 .parallel(
                                     tween(bubble1)
-                                        .to(0.75, { position: new Vec3(temp1Col * GameDefines.spacing + GameDefines.offsetX, temp1Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" }),
+                                        .to(0.75, { position: new Vec3(temp1Col * GameDefines.spacing + GameDefines.offsetX, temp1Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" })
+                                        .call(() => {
+                                            this.onEventClick();
+                                        }),
 
                                     tween(bubble1)
                                         .call(() => {
-                                            tween(bubble2).to(0.75, { position: new Vec3(temp2Col * GameDefines.spacing + GameDefines.offsetX, temp2Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" }).start();
+                                            tween(bubble2)
+                                                .to(0.75, { position: new Vec3(temp2Col * GameDefines.spacing + GameDefines.offsetX, temp2Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" })
+                                                .start();
                                         })
                                 )
                                 .start();
                         } else {
-                            // tween(bubble1)
-                            //     .call(() => {
                             this.findAndRemoveMatches();
-                            //this.affectAbove();
-                            // })
-                            // .start();
-
                         }
                     }),
+
                 tween(bubble1)
                     .call(() => {
-                        tween(bubble2).to(0.75, { position: new Vec3(temp1Col * GameDefines.spacing + GameDefines.offsetX, temp1Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" }).start();
+                        tween(bubble2)
+                            .to(0.75, { position: new Vec3(temp1Col * GameDefines.spacing + GameDefines.offsetX, temp1Row * GameDefines.spacing + GameDefines.offsetY) }, { easing: "quadInOut" })
+                            .start();
                     })
             )
 
@@ -177,23 +176,6 @@ export class GameController extends Component {
 
 
     }
-
-    // public moveBubble() {
-    //     let madeMove: boolean = false;
-
-    //     for (let row = 0; row < 5; row++) {
-    //         for (let col = 0; col < 5; col++) {
-    //             if (this._gridData[col][row]) {
-    //                 let dataController: bubbleController = this._gridData[col][row].getComponent(bubbleController);
-    //                 //needs to move down
-    //                 if (dataController.col) {
-
-    //                 }
-    //             }
-    //         }
-
-    //     }
-    // }
 
     //return an array of all matches found
     public lookForMatches(): string[] {
@@ -276,8 +258,6 @@ export class GameController extends Component {
 
     // gets matches and removes them, applies points
     public findAndRemoveMatches() {
-        if (!this.availableMoves()) console.log("end game");
-
         //get list of matches
         let matches = this.lookForMatches();
 
@@ -300,6 +280,13 @@ export class GameController extends Component {
 
         if (matches.length > 0) {
             this.affectAbove();
+        } else {
+            if (!this.availableMoves()) {
+                this.endGameUI.active = true;
+                this.offEventClick();
+            } else {
+                this.onEventClick();
+            }
         }
     }
 
@@ -369,23 +356,23 @@ export class GameController extends Component {
     public hozirontalTwoPlusOne(bubbleUuid: string): boolean {
         let script1 = this.getScriptByNodeUuid(bubbleUuid);
 
-        if (!this._gridData[script1.col + 1][script1.row]) return false;
+        if (!this._gridData[script1.col + 1]?.[script1.row]) return false;
 
         let script2 = this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row]);
 
         if (script1.type != script2.type) return false;
 
-        let script3 = this._gridData[script1.col - 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
+        let script3 = this._gridData[script1.col - 1]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
 
-        let script4 = this._gridData[script1.col - 2][script1.row] ? this.getScriptByNodeUuid(this._gridData[script1.col - 2][script1.row]) : null;
+        let script4 = this._gridData[script1.col - 2]?.[script1.row] ? this.getScriptByNodeUuid(this._gridData[script1.col - 2][script1.row]) : null;
 
-        let script5 = this._gridData[script1.col - 1][script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row - 1]) : null;
+        let script5 = this._gridData[script1.col - 1]?.[script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row - 1]) : null;
 
-        let script6 = this._gridData[script1.col + 2][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row + 1]) : null;
+        let script6 = this._gridData[script1.col + 2]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row + 1]) : null;
 
-        let script7 = this._gridData[script1.col + 3][script1.row] ? this.getScriptByNodeUuid(this._gridData[script1.col + 3][script1.row]) : null;
+        let script7 = this._gridData[script1.col + 3]?.[script1.row] ? this.getScriptByNodeUuid(this._gridData[script1.col + 3][script1.row]) : null;
 
-        let script8 = this._gridData[script1.col + 2][script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row - 1]) : null;
+        let script8 = this._gridData[script1.col + 2]?.[script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row - 1]) : null;
 
         if (!script3 && !script4 && !script5 && !script6 && !script7 && !script8) return false;
 
@@ -400,14 +387,14 @@ export class GameController extends Component {
     public horizntalMiddle(bubbleUuid: string): boolean {
         let script1 = this.getScriptByNodeUuid(bubbleUuid);
 
-        if (!this._gridData[script1.col + 2][script1.row]) return false;
+        if (!this._gridData[script1.col + 2]?.[script1.row]) return false;
 
         let script2 = this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row]);
         if (script1.type != script2.type) return false;
 
-        let script3 = this._gridData[script1.col + 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
+        let script3 = this._gridData[script1.col + 1]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
 
-        let script4 = this._gridData[script1.col + 2][script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row - 1]) : null;
+        let script4 = this._gridData[script1.col + 2]?.[script1.row - 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 2][script1.row - 1]) : null;
 
         if (!script3 && !script4) return false;
 
@@ -418,23 +405,23 @@ export class GameController extends Component {
     public verticalTwoPlusOne(bubbleUuid: string): boolean {
         let script1 = this.getScriptByNodeUuid(bubbleUuid);
 
-        if (!this._gridData[script1.col][script1.row - 1]) return false;
+        if (!this._gridData[script1.col]?.[script1.row - 1]) return false;
 
         let script2 = this.getScriptByNodeUuid(this._gridData[script1.col][script1.row - 1]);
 
         if (script1.type != script2.type) return false;
 
-        let script3 = this._gridData[script1.col - 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
+        let script3 = this._gridData[script1.col - 1]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
 
-        let script4 = this._gridData[script1.col][script1.row + 2] ? this.getScriptByNodeUuid(this._gridData[script1.col][script1.row + 2]) : null;
+        let script4 = this._gridData[script1.col]?.[script1.row + 2] ? this.getScriptByNodeUuid(this._gridData[script1.col][script1.row + 2]) : null;
 
-        let script5 = this._gridData[script1.col + 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
+        let script5 = this._gridData[script1.col + 1]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
 
-        let script6 = this._gridData[script1.col - 1][script1.row - 2] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row - 2]) : null;
+        let script6 = this._gridData[script1.col - 1]?.[script1.row - 2] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row - 2]) : null;
 
-        let script7 = this._gridData[script1.col][script1.row - 3] ? this.getScriptByNodeUuid(this._gridData[script1.col][script1.row - 3]) : null;
+        let script7 = this._gridData[script1.col]?.[script1.row - 3] ? this.getScriptByNodeUuid(this._gridData[script1.col][script1.row - 3]) : null;
 
-        let script8 = this._gridData[script1.col + 1][script1.row - 2] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row - 2]) : null;
+        let script8 = this._gridData[script1.col + 1]?.[script1.row - 2] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row - 2]) : null;
 
         if (!script3 && !script4 && !script5 && !script6 && !script7 && !script8) return false;
 
@@ -449,14 +436,14 @@ export class GameController extends Component {
     public verticalMiddle(bubbleUuid: string): boolean {
         let script1 = this.getScriptByNodeUuid(bubbleUuid);
 
-        if (!this._gridData[script1.col][script1.row + 2]) return false;
+        if (!this._gridData[script1.col]?.[script1.row + 2]) return false;
 
         let script2 = this.getScriptByNodeUuid(this._gridData[script1.col][script1.row + 2]);
         if (script1.type != script2.type) return false;
 
-        let script3 = this._gridData[script1.col - 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
+        let script3 = this._gridData[script1.col - 1]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col - 1][script1.row + 1]) : null;
 
-        let script4 = this._gridData[script1.col + 1][script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
+        let script4 = this._gridData[script1.col + 1]?.[script1.row + 1] ? this.getScriptByNodeUuid(this._gridData[script1.col + 1][script1.row + 1]) : null;
 
         if (!script3 && !script4) return false;
 
@@ -466,5 +453,21 @@ export class GameController extends Component {
 
     public getScriptByNodeUuid(uuid: string): bubbleController {
         return this.gridViewNode.getChildByUuid(uuid).getComponent(bubbleController);
+    }
+
+    public offEventClick() {
+        for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 5; row++) {
+                this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).offEventClick();
+            }
+        }
+    }
+
+    public onEventClick() {
+        for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 5; row++) {
+                this.gridViewNode.getChildByUuid(this._gridData[col][row]).getComponent(bubbleController).onEventClick();
+            }
+        }
     }
 }

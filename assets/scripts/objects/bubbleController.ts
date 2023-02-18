@@ -27,7 +27,7 @@ export class bubbleController extends Component {
     }
 
     start() {
-        this.node.on(Input.EventType.TOUCH_START, this.clickPiece, this);
+        //this.node.on(Input.EventType.TOUCH_START, this.clickPiece, this);
     }
 
     setDisplaySpriteFrame(index: number): void {
